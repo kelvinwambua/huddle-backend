@@ -6,7 +6,30 @@ package sqlc
 
 import (
 	"database/sql"
+	"time"
 )
+
+type Profile struct {
+	ID          int32          `json:"id"`
+	UserID      int32          `json:"user_id"`
+	Username    string         `json:"username"`
+	DisplayName sql.NullString `json:"display_name"`
+	Bio         sql.NullString `json:"bio"`
+	Website     sql.NullString `json:"website"`
+	CreatedAt   sql.NullTime   `json:"created_at"`
+	UpdatedAt   sql.NullTime   `json:"updated_at"`
+}
+
+type Session struct {
+	ID        string         `json:"id"`
+	UserID    int32          `json:"user_id"`
+	Provider  sql.NullString `json:"provider"`
+	IpAddress sql.NullString `json:"ip_address"`
+	UserAgent sql.NullString `json:"user_agent"`
+	ExpiresAt time.Time      `json:"expires_at"`
+	CreatedAt sql.NullTime   `json:"created_at"`
+	UpdatedAt sql.NullTime   `json:"updated_at"`
+}
 
 type User struct {
 	ID             int32          `json:"id"`

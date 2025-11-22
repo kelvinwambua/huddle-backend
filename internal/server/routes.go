@@ -3,6 +3,7 @@ package server
 import (
     "net/http"
 
+    "huddle-backend/internal/handlers"
     "huddle-backend/internal/middleware"
 
     "github.com/gin-contrib/cors"
@@ -29,10 +30,25 @@ func (s *Server) RegisterRoutes() http.Handler {
         auth.POST("/logout", s.logoutHandler)
     }
 
+    profileHandler := handlers.NewProfileHandler(s.profileService)
+
     api := r.Group("/api")
-    api.Use(middleware.RequireAuth())
+    api.Use(middleware.RequireAuth(s.authService))
     {
         api.GET("/me", s.getCurrentUserHandler)
+
+        profiles := api.Group("/profiles")
+        {
+            profiles.POST("", profileHandler.CreateProfile)
+            profiles.GET("/me", profileHandler.GetMyProfile)
+            profiles.GET("/check-username", profileHandler.CheckUsernameAvailability)
+            profiles.GET("/search", profileHandler.SearchProfiles)
+            profiles.GET("", profileHandler.ListProfiles)
+            profiles.GET("/:username", profileHandler.GetProfileByUsername)
+            profiles.PUT("", profileHandler.UpdateProfile)
+            profiles.PATCH("/username", profileHandler.UpdateUsername)
+            profiles.DELETE("", profileHandler.DeleteProfile)
+        }
     }
 
     return r

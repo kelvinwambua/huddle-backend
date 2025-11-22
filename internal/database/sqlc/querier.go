@@ -9,14 +9,29 @@ import (
 )
 
 type Querier interface {
+	CheckUsernameExists(ctx context.Context, username string) (bool, error)
 	CreateOAuthUser(ctx context.Context, arg CreateOAuthUserParams) (User, error)
+	CreateProfile(ctx context.Context, arg CreateProfileParams) (Profile, error)
+	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
+	DeleteExpiredSessions(ctx context.Context) error
+	DeleteProfile(ctx context.Context, userID int32) error
+	DeleteSession(ctx context.Context, id string) error
 	DeleteUser(ctx context.Context, id int32) error
+	DeleteUserSessions(ctx context.Context, userID int32) error
+	GetProfileByUserID(ctx context.Context, userID int32) (Profile, error)
+	GetProfileByUsername(ctx context.Context, username string) (Profile, error)
+	GetSessionByID(ctx context.Context, id string) (GetSessionByIDRow, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id int32) (User, error)
 	GetUserByProviderID(ctx context.Context, arg GetUserByProviderIDParams) (User, error)
+	GetUserSessions(ctx context.Context, userID int32) ([]Session, error)
+	ListProfiles(ctx context.Context, arg ListProfilesParams) ([]Profile, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
+	SearchProfilesByUsername(ctx context.Context, arg SearchProfilesByUsernameParams) ([]Profile, error)
+	UpdateProfile(ctx context.Context, arg UpdateProfileParams) (Profile, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
 	UpdateUserOAuthTokens(ctx context.Context, arg UpdateUserOAuthTokensParams) (User, error)
+	UpdateUsername(ctx context.Context, arg UpdateUsernameParams) (Profile, error)
 }
 
 var _ Querier = (*Queries)(nil)

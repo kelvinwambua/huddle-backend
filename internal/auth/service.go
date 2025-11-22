@@ -2,9 +2,12 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/base64"
 	"fmt"
 	"log"
+	"time"
 
 	"huddle-backend/internal/database/sqlc"
 
@@ -19,11 +22,18 @@ func NewService(queries *sqlc.Queries) *Service {
 	return &Service{queries: queries}
 }
 
+func GenerateSessionID() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(b), nil
+}
+
 func (s *Service) FindOrCreateOAuthUser(ctx context.Context, gothUser goth.User) (sqlc.User, error) {
 	log.Printf("=== FindOrCreateOAuthUser ===")
 	log.Printf("Provider: %s, UserID: %s, Email: %s", gothUser.Provider, gothUser.UserID, gothUser.Email)
 
-	// Try to find existing user by provider ID
 	user, err := s.queries.GetUserByProviderID(ctx, sqlc.GetUserByProviderIDParams{
 		Provider:       sql.NullString{String: gothUser.Provider, Valid: true},
 		ProviderUserID: sql.NullString{String: gothUser.UserID, Valid: true},
@@ -68,8 +78,6 @@ func (s *Service) FindOrCreateOAuthUser(ctx context.Context, gothUser goth.User)
 		Location:       sql.NullString{String: gothUser.Location, Valid: gothUser.Location != ""},
 	}
 
-	log.Printf("Creating user with params: %+v", params)
-
 	newUser, err := s.queries.CreateOAuthUser(ctx, params)
 	if err != nil {
 		log.Printf("Error creating user: %v", err)
@@ -78,6 +86,36 @@ func (s *Service) FindOrCreateOAuthUser(ctx context.Context, gothUser goth.User)
 
 	log.Printf("User created successfully: %+v", newUser)
 	return newUser, nil
+}
+
+func (s *Service) CreateSession(ctx context.Context, userID int32, provider, ipAddress, userAgent string) (sqlc.Session, error) {
+	sessionID, err := GenerateSessionID()
+	if err != nil {
+		return sqlc.Session{}, fmt.Errorf("failed to generate session ID: %w", err)
+	}
+
+	expiresAt := time.Now().Add(7 * 24 * time.Hour)
+
+	return s.queries.CreateSession(ctx, sqlc.CreateSessionParams{
+		ID:        sessionID,
+		UserID:    userID,
+		Provider:  sql.NullString{String: provider, Valid: provider != ""},
+		IpAddress: sql.NullString{String: ipAddress, Valid: ipAddress != ""},
+		UserAgent: sql.NullString{String: userAgent, Valid: userAgent != ""},
+		ExpiresAt: expiresAt,
+	})
+}
+
+func (s *Service) GetSessionByID(ctx context.Context, sessionID string) (sqlc.GetSessionByIDRow, error) {
+	return s.queries.GetSessionByID(ctx, sessionID)
+}
+
+func (s *Service) DeleteSession(ctx context.Context, sessionID string) error {
+	return s.queries.DeleteSession(ctx, sessionID)
+}
+
+func (s *Service) DeleteUserSessions(ctx context.Context, userID int32) error {
+	return s.queries.DeleteUserSessions(ctx, userID)
 }
 
 func (s *Service) GetUserByID(ctx context.Context, id int32) (sqlc.User, error) {

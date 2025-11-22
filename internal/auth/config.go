@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	SessionName = "huddle_auth_session"
-	MaxAge      = 86400 * 30
+	SessionName  = "huddle_session"
+	SessionIDKey = "session_id"
+	MaxAge       = 86400 * 7 // 7 days
 )
 
 var Store *sessions.CookieStore
@@ -20,14 +21,17 @@ var Store *sessions.CookieStore
 func InitAuth() {
 	sessionSecret := os.Getenv("SESSION_SECRET")
 	if sessionSecret == "" {
-		sessionSecret = "default-secret-please-change-in-production"
+		panic("SESSION_SECRET must be set in production")
 	}
+
+	appEnv := os.Getenv("APP_ENV")
+	isProduction := appEnv == "production"
 
 	Store = sessions.NewCookieStore([]byte(sessionSecret))
 	Store.MaxAge(MaxAge)
 	Store.Options.Path = "/"
 	Store.Options.HttpOnly = true
-	Store.Options.Secure = false
+	Store.Options.Secure = isProduction
 	Store.Options.SameSite = 2
 
 	gothic.Store = Store
