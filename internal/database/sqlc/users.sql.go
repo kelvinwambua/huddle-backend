@@ -10,34 +10,80 @@ import (
 	"database/sql"
 )
 
-const createUser = `-- name: CreateUser :one
-INSERT INTO users (username, email, password_hash, avatar_url)
-VALUES ($1, $2, $3, $4)
-RETURNING id, username, email, created_at, password_hash, avatar_url, updated_at
+const createOAuthUser = `-- name: CreateOAuthUser :one
+INSERT INTO users (
+    username,
+    email,
+    avatar_url,
+    provider,
+    provider_user_id,
+    access_token,
+    refresh_token,
+    expires_at,
+    name,
+    first_name,
+    last_name,
+    nick_name,
+    description,
+    location
+)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+    RETURNING id, username, email, password_hash, avatar_url, provider, provider_user_id, access_token, refresh_token, expires_at, name, first_name, last_name, nick_name, description, location, created_at, updated_at
 `
 
-type CreateUserParams struct {
-	Username     string         `json:"username"`
-	Email        string         `json:"email"`
-	PasswordHash string         `json:"password_hash"`
-	AvatarUrl    sql.NullString `json:"avatar_url"`
+type CreateOAuthUserParams struct {
+	Username       string         `json:"username"`
+	Email          string         `json:"email"`
+	AvatarUrl      sql.NullString `json:"avatar_url"`
+	Provider       sql.NullString `json:"provider"`
+	ProviderUserID sql.NullString `json:"provider_user_id"`
+	AccessToken    sql.NullString `json:"access_token"`
+	RefreshToken   sql.NullString `json:"refresh_token"`
+	ExpiresAt      sql.NullTime   `json:"expires_at"`
+	Name           sql.NullString `json:"name"`
+	FirstName      sql.NullString `json:"first_name"`
+	LastName       sql.NullString `json:"last_name"`
+	NickName       sql.NullString `json:"nick_name"`
+	Description    sql.NullString `json:"description"`
+	Location       sql.NullString `json:"location"`
 }
 
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, createUser,
+func (q *Queries) CreateOAuthUser(ctx context.Context, arg CreateOAuthUserParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, createOAuthUser,
 		arg.Username,
 		arg.Email,
-		arg.PasswordHash,
 		arg.AvatarUrl,
+		arg.Provider,
+		arg.ProviderUserID,
+		arg.AccessToken,
+		arg.RefreshToken,
+		arg.ExpiresAt,
+		arg.Name,
+		arg.FirstName,
+		arg.LastName,
+		arg.NickName,
+		arg.Description,
+		arg.Location,
 	)
 	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.Username,
 		&i.Email,
-		&i.CreatedAt,
 		&i.PasswordHash,
 		&i.AvatarUrl,
+		&i.Provider,
+		&i.ProviderUserID,
+		&i.AccessToken,
+		&i.RefreshToken,
+		&i.ExpiresAt,
+		&i.Name,
+		&i.FirstName,
+		&i.LastName,
+		&i.NickName,
+		&i.Description,
+		&i.Location,
+		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
@@ -54,7 +100,7 @@ func (q *Queries) DeleteUser(ctx context.Context, id int32) error {
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, username, email, created_at, password_hash, avatar_url, updated_at FROM users
+SELECT id, username, email, password_hash, avatar_url, provider, provider_user_id, access_token, refresh_token, expires_at, name, first_name, last_name, nick_name, description, location, created_at, updated_at FROM users
 WHERE email = $1
 `
 
@@ -65,16 +111,27 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.ID,
 		&i.Username,
 		&i.Email,
-		&i.CreatedAt,
 		&i.PasswordHash,
 		&i.AvatarUrl,
+		&i.Provider,
+		&i.ProviderUserID,
+		&i.AccessToken,
+		&i.RefreshToken,
+		&i.ExpiresAt,
+		&i.Name,
+		&i.FirstName,
+		&i.LastName,
+		&i.NickName,
+		&i.Description,
+		&i.Location,
+		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, username, email, created_at, password_hash, avatar_url, updated_at FROM users
+SELECT id, username, email, password_hash, avatar_url, provider, provider_user_id, access_token, refresh_token, expires_at, name, first_name, last_name, nick_name, description, location, created_at, updated_at FROM users
 WHERE id = $1
 `
 
@@ -85,18 +142,65 @@ func (q *Queries) GetUserByID(ctx context.Context, id int32) (User, error) {
 		&i.ID,
 		&i.Username,
 		&i.Email,
-		&i.CreatedAt,
 		&i.PasswordHash,
 		&i.AvatarUrl,
+		&i.Provider,
+		&i.ProviderUserID,
+		&i.AccessToken,
+		&i.RefreshToken,
+		&i.ExpiresAt,
+		&i.Name,
+		&i.FirstName,
+		&i.LastName,
+		&i.NickName,
+		&i.Description,
+		&i.Location,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getUserByProviderID = `-- name: GetUserByProviderID :one
+SELECT id, username, email, password_hash, avatar_url, provider, provider_user_id, access_token, refresh_token, expires_at, name, first_name, last_name, nick_name, description, location, created_at, updated_at FROM users
+WHERE provider = $1 AND provider_user_id = $2
+`
+
+type GetUserByProviderIDParams struct {
+	Provider       sql.NullString `json:"provider"`
+	ProviderUserID sql.NullString `json:"provider_user_id"`
+}
+
+func (q *Queries) GetUserByProviderID(ctx context.Context, arg GetUserByProviderIDParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByProviderID, arg.Provider, arg.ProviderUserID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.PasswordHash,
+		&i.AvatarUrl,
+		&i.Provider,
+		&i.ProviderUserID,
+		&i.AccessToken,
+		&i.RefreshToken,
+		&i.ExpiresAt,
+		&i.Name,
+		&i.FirstName,
+		&i.LastName,
+		&i.NickName,
+		&i.Description,
+		&i.Location,
+		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, username, email, created_at, password_hash, avatar_url, updated_at FROM users
+SELECT id, username, email, password_hash, avatar_url, provider, provider_user_id, access_token, refresh_token, expires_at, name, first_name, last_name, nick_name, description, location, created_at, updated_at FROM users
 ORDER BY created_at DESC
-LIMIT $1 OFFSET $2
+    LIMIT $1 OFFSET $2
 `
 
 type ListUsersParams struct {
@@ -117,9 +221,20 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 			&i.ID,
 			&i.Username,
 			&i.Email,
-			&i.CreatedAt,
 			&i.PasswordHash,
 			&i.AvatarUrl,
+			&i.Provider,
+			&i.ProviderUserID,
+			&i.AccessToken,
+			&i.RefreshToken,
+			&i.ExpiresAt,
+			&i.Name,
+			&i.FirstName,
+			&i.LastName,
+			&i.NickName,
+			&i.Description,
+			&i.Location,
+			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
@@ -139,7 +254,7 @@ const updateUser = `-- name: UpdateUser :one
 UPDATE users
 SET username = $2, avatar_url = $3, updated_at = NOW()
 WHERE id = $1
-RETURNING id, username, email, created_at, password_hash, avatar_url, updated_at
+    RETURNING id, username, email, password_hash, avatar_url, provider, provider_user_id, access_token, refresh_token, expires_at, name, first_name, last_name, nick_name, description, location, created_at, updated_at
 `
 
 type UpdateUserParams struct {
@@ -155,9 +270,69 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.ID,
 		&i.Username,
 		&i.Email,
-		&i.CreatedAt,
 		&i.PasswordHash,
 		&i.AvatarUrl,
+		&i.Provider,
+		&i.ProviderUserID,
+		&i.AccessToken,
+		&i.RefreshToken,
+		&i.ExpiresAt,
+		&i.Name,
+		&i.FirstName,
+		&i.LastName,
+		&i.NickName,
+		&i.Description,
+		&i.Location,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateUserOAuthTokens = `-- name: UpdateUserOAuthTokens :one
+UPDATE users
+SET
+    access_token = $2,
+    refresh_token = $3,
+    expires_at = $4,
+    updated_at = NOW()
+WHERE id = $1
+    RETURNING id, username, email, password_hash, avatar_url, provider, provider_user_id, access_token, refresh_token, expires_at, name, first_name, last_name, nick_name, description, location, created_at, updated_at
+`
+
+type UpdateUserOAuthTokensParams struct {
+	ID           int32          `json:"id"`
+	AccessToken  sql.NullString `json:"access_token"`
+	RefreshToken sql.NullString `json:"refresh_token"`
+	ExpiresAt    sql.NullTime   `json:"expires_at"`
+}
+
+func (q *Queries) UpdateUserOAuthTokens(ctx context.Context, arg UpdateUserOAuthTokensParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, updateUserOAuthTokens,
+		arg.ID,
+		arg.AccessToken,
+		arg.RefreshToken,
+		arg.ExpiresAt,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.PasswordHash,
+		&i.AvatarUrl,
+		&i.Provider,
+		&i.ProviderUserID,
+		&i.AccessToken,
+		&i.RefreshToken,
+		&i.ExpiresAt,
+		&i.Name,
+		&i.FirstName,
+		&i.LastName,
+		&i.NickName,
+		&i.Description,
+		&i.Location,
+		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err

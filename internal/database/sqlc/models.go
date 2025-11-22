@@ -9,11 +9,22 @@ import (
 )
 
 type User struct {
-	ID           int32          `json:"id"`
-	Username     string         `json:"username"`
-	Email        string         `json:"email"`
-	CreatedAt    sql.NullTime   `json:"created_at"`
-	PasswordHash string         `json:"password_hash"`
-	AvatarUrl    sql.NullString `json:"avatar_url"`
-	UpdatedAt    sql.NullTime   `json:"updated_at"`
+	ID             int32          `json:"id"`
+	Username       string         `json:"username"`
+	Email          string         `json:"email"`
+	PasswordHash   sql.NullString `json:"password_hash"`
+	AvatarUrl      sql.NullString `json:"avatar_url"`
+	Provider       sql.NullString `json:"provider"`
+	ProviderUserID sql.NullString `json:"provider_user_id"`
+	AccessToken    sql.NullString `json:"access_token"`
+	RefreshToken   sql.NullString `json:"refresh_token"`
+	ExpiresAt      sql.NullTime   `json:"expires_at"`
+	Name           sql.NullString `json:"name"`
+	FirstName      sql.NullString `json:"first_name"`
+	LastName       sql.NullString `json:"last_name"`
+	NickName       sql.NullString `json:"nick_name"`
+	Description    sql.NullString `json:"description"`
+	Location       sql.NullString `json:"location"`
+	CreatedAt      sql.NullTime   `json:"created_at"`
+	UpdatedAt      sql.NullTime   `json:"updated_at"`
 }
